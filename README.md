@@ -124,7 +124,7 @@ To quickly see the code in action, create a <a href="https://www.comet.ml/">Come
 ```
 CUDA_VISIBLE_DEVICES=0 COMET_API_KEY=YOUR-API-KEY python main.py ctdet --exp_id coco_dla_2x --batch_size 8 --master_batch 8 --lr 5e-4 --gpus 0 --num_workers 4 --num_epochs 230 lr_step 180,210
 ```
-Demo Project: https://www.comet.ml/comet-papers/retinaface <br /><br />
+Demo Project: https://www.comet.ml/comet-papers/centernet <br /><br />
 
 ## Develop
 
