@@ -120,7 +120,7 @@ ret = detector.run(img)['results']
 After [installation](readme/INSTALL.md), follow the instructions in [DATA.md](readme/DATA.md) to setup the datasets. Then check [GETTING_STARTED.md](readme/GETTING_STARTED.md) to reproduce the results in the paper.
 We provide scripts for all the experiments in the [experiments](experiments) folder.
 
-To quickly see the code in action, create a <a href="https://www.comet.ml/">Comet API key</a>, and run the following:
+To quickly see the code in action on coco using a single GPU, create a <a href="https://www.comet.ml/">Comet API key</a>, and run the following:
 ```
 CUDA_VISIBLE_DEVICES=0 COMET_API_KEY=YOUR-API-KEY python main.py ctdet --exp_id coco_dla_2x --batch_size 8 --master_batch 8 --lr 5e-4 --gpus 0 --num_workers 4 --num_epochs 230 lr_step 180,210
 ```
