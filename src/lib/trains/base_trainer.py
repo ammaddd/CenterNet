@@ -61,6 +61,7 @@ class BaseTrainer(object):
     for iter_id, batch in enumerate(data_loader):
       if iter_id >= num_iters:
         break
+      global_step = (epoch-1)*len(data_loader)+iter_id
       data_time.update(time.time() - end)
 
       for k in batch:
@@ -70,7 +71,7 @@ class BaseTrainer(object):
         image = ((batch['input'][0, ...].permute(1, 2, 0).to('cpu').numpy() *
               np.array(std)) + np.array(mean)) * 255.0
         experiment.log_image(image[:, :, ::-1], name=phase,
-                            image_channels="last", step=iter_id)    
+                             image_channels="last", step=global_step)    
       output, loss, loss_stats = model_with_loss(batch)
       loss = loss.mean()
       if phase == 'train':
@@ -103,7 +104,7 @@ class BaseTrainer(object):
         self.save_result(output, batch, results)
       for k,v in avg_loss_stats.items():
         experiment.log_metric('{}_{}'.format(phase,k), v.avg,
-                              step=epoch*(iter_id+1), epoch=epoch)
+                              step=global_step, epoch=epoch)
                               
       del output, loss, loss_stats
     
