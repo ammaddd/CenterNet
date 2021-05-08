@@ -7,7 +7,7 @@ import torch
 from progress.bar import Bar
 from models.data_parallel import DataParallel
 from utils.utils import AverageMeter
-
+import numpy as np
 
 class ModelWithLoss(torch.nn.Module):
   def __init__(self, model, loss):
@@ -41,7 +41,7 @@ class BaseTrainer(object):
         if isinstance(v, torch.Tensor):
           state[k] = v.to(device=device, non_blocking=True)
 
-  def run_epoch(self, phase, epoch, data_loader):
+  def run_epoch(self, phase, epoch, data_loader, experiment, mean, std):
     model_with_loss = self.model_with_loss
     if phase == 'train':
       model_with_loss.train()
@@ -61,11 +61,17 @@ class BaseTrainer(object):
     for iter_id, batch in enumerate(data_loader):
       if iter_id >= num_iters:
         break
+      global_step = (epoch-1)*len(data_loader)+iter_id
       data_time.update(time.time() - end)
 
       for k in batch:
         if k != 'meta':
-          batch[k] = batch[k].to(device=opt.device, non_blocking=True)    
+          batch[k] = batch[k].to(device=opt.device, non_blocking=True)
+      if iter_id % 200 == 0:
+        image = ((batch['input'][0, ...].permute(1, 2, 0).to('cpu').numpy() *
+              np.array(std)) + np.array(mean)) * 255.0
+        experiment.log_image(image[:, :, ::-1], name=phase,
+                             image_channels="last", step=global_step)    
       output, loss, loss_stats = model_with_loss(batch)
       loss = loss.mean()
       if phase == 'train':
@@ -96,6 +102,10 @@ class BaseTrainer(object):
       
       if opt.test:
         self.save_result(output, batch, results)
+      for k,v in avg_loss_stats.items():
+        experiment.log_metric('{}_{}'.format(phase,k), v.avg,
+                              step=global_step, epoch=epoch)
+                              
       del output, loss, loss_stats
     
     bar.finish()
@@ -112,8 +122,10 @@ class BaseTrainer(object):
   def _get_losses(self, opt):
     raise NotImplementedError
   
-  def val(self, epoch, data_loader):
-    return self.run_epoch('val', epoch, data_loader)
+  def val(self, epoch, data_loader, experiment, mean, std):
+    return self.run_epoch('val', epoch, data_loader, experiment, mean,
+                         std)
 
-  def train(self, epoch, data_loader):
-    return self.run_epoch('train', epoch, data_loader)
+  def train(self, epoch, data_loader, experiment, mean, std):
+    return self.run_epoch('train', epoch, data_loader, experiment, mean,
+                         std)
