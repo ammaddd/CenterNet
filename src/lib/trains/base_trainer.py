@@ -41,7 +41,7 @@ class BaseTrainer(object):
         if isinstance(v, torch.Tensor):
           state[k] = v.to(device=device, non_blocking=True)
 
-  def run_epoch(self, phase, epoch, data_loader, experiment, mean, std):
+  def run_epoch(self, phase, epoch, data_loader, comet_logger, mean, std):
     model_with_loss = self.model_with_loss
     if phase == 'train':
       model_with_loss.train()
@@ -70,8 +70,8 @@ class BaseTrainer(object):
       if iter_id % 200 == 0:
         image = ((batch['input'][0, ...].permute(1, 2, 0).to('cpu').numpy() *
               np.array(std)) + np.array(mean)) * 255.0
-        experiment.log_image(image[:, :, ::-1], name=phase,
-                             image_channels="last", step=global_step)    
+        comet_logger.log_image(image[:, :, ::-1], name=phase,
+                               image_channels="last", step=global_step)    
       output, loss, loss_stats = model_with_loss(batch)
       loss = loss.mean()
       if phase == 'train':
@@ -103,8 +103,8 @@ class BaseTrainer(object):
       if opt.test:
         self.save_result(output, batch, results)
       for k,v in avg_loss_stats.items():
-        experiment.log_metric('{}_{}'.format(phase,k), v.avg,
-                              step=global_step, epoch=epoch)
+        comet_logger.log_metric('{}_{}'.format(phase,k), v.avg,
+                                step=global_step, epoch=epoch)
                               
       del output, loss, loss_stats
     
@@ -122,10 +122,10 @@ class BaseTrainer(object):
   def _get_losses(self, opt):
     raise NotImplementedError
   
-  def val(self, epoch, data_loader, experiment, mean, std):
-    return self.run_epoch('val', epoch, data_loader, experiment, mean,
-                         std)
+  def val(self, epoch, data_loader, comet_logger, mean, std):
+    return self.run_epoch('val', epoch, data_loader, comet_logger, mean,
+                          std)
 
-  def train(self, epoch, data_loader, experiment, mean, std):
-    return self.run_epoch('train', epoch, data_loader, experiment, mean,
-                         std)
+  def train(self, epoch, data_loader, comet_logger, mean, std):
+    return self.run_epoch('train', epoch, data_loader, comet_logger, mean,
+                          std)
